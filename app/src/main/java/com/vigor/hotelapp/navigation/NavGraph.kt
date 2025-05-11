@@ -1,13 +1,12 @@
+package com.vigor.hotelapp.navigation
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.vigor.hotelapp.screens.BookingScreen
-import com.vigor.hotelapp.screens.HomeScreen
-import com.vigor.hotelapp.screens.LoginScreen
-import com.vigor.hotelapp.screens.ProfileScreen
-import com.vigor.hotelapp.screens.SignupScreen
+import androidx.navigation.navDeepLink
+import com.vigor.hotelapp.screens.*
 
 @Composable
 fun AppNavHost(navController: NavHostController) {
@@ -18,9 +17,26 @@ fun AppNavHost(navController: NavHostController) {
         composable("profile") { ProfileScreen(navController) }
         composable(
             "booking?hotelId={hotelId}",
-            arguments = listOf(navArgument("hotelId") { defaultValue = 0 })
+            arguments = listOf(navArgument("hotelId") { type = androidx.navigation.NavType.IntType })
         ) { backStackEntry ->
-            BookingScreen(navController)
+            BookingScreen(
+                navController = navController,
+                hotelId = backStackEntry.arguments?.getInt("hotelId") ?: 0
+            )
         }
+        composable(
+            "hotelDetails?hotelId={hotelId}",
+            arguments = listOf(navArgument("hotelId") { type = androidx.navigation.NavType.IntType })
+        ) { backStackEntry ->
+            HotelDetailsScreen(
+                navController = navController,
+                hotelId = backStackEntry.arguments?.getInt("hotelId") ?: 0
+            )
+        }
+        composable(
+            "adminLogin",
+            deepLinks = listOf(navDeepLink { uriPattern = "hotelapp://admin" })
+        ) { AdminLoginScreen(navController) }
+        composable("admin") { AdminScreen(navController) }
     }
 }

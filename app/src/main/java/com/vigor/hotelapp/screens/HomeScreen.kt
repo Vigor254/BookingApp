@@ -27,10 +27,9 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(navController: NavHostController, viewModel: HotelViewModel = hiltViewModel()) {
-    val hotels by viewModel.hotels
+    val hotels by remember { mutableStateOf(viewModel.hotels.value) }
     var currentIndex by remember { mutableStateOf(0) }
 
-    // Auto-scrolling effect for the carousel
     LaunchedEffect(Unit) {
         while (true) {
             delay(3000)
@@ -45,7 +44,6 @@ fun HomeScreen(navController: NavHostController, viewModel: HotelViewModel = hil
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Header with app title and profile icon
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -74,9 +72,11 @@ fun HomeScreen(navController: NavHostController, viewModel: HotelViewModel = hil
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Display hotel carousel or loading state
         if (hotels.isNotEmpty()) {
-            val hotel = hotels.getOrNull(currentIndex) ?: hotels.firstOrNull() ?: return@Column
+            val hotel = hotels.getOrNull(currentIndex) ?: hotels.firstOrNull() ?: run {
+                Text("No hotels available", style = MaterialTheme.typography.bodyLarge)
+                return@Column
+            }
             HotelCarouselItem(
                 hotel = hotel,
                 onBookClick = {
@@ -85,18 +85,24 @@ fun HomeScreen(navController: NavHostController, viewModel: HotelViewModel = hil
                     } else {
                         navController.navigate("booking?hotelId=${hotel.id}")
                     }
+                },
+                onSeeMoreClick = {
+                    navController.navigate("hotelDetails?hotelId=${hotel.id}")
                 }
             )
         } else {
-            Text(text = "Loading hotels...", style = MaterialTheme.typography.bodyLarge)
+            Text("Loading hotels...", style = MaterialTheme.typography.bodyLarge)
             LaunchedEffect(Unit) {
-                viewModel.loadHotels()
+                try {
+                    viewModel.loadHotels()
+                } catch (e: Exception) {
+                    Log.e("HomeScreen", "Failed to load hotels", e)
+                }
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Home Button at Bottom
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -122,11 +128,11 @@ fun HomeScreen(navController: NavHostController, viewModel: HotelViewModel = hil
 }
 
 @Composable
-fun HotelCarouselItem(hotel: Hotel, onBookClick: () -> Unit) {
+fun HotelCarouselItem(hotel: Hotel, onBookClick: () -> Unit, onSeeMoreClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight()
+            .heightIn(max = 400.dp)
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -137,13 +143,11 @@ fun HotelCarouselItem(hotel: Hotel, onBookClick: () -> Unit) {
                 .padding(16.dp)
         ) {
             Image(
-                painter = if (hotel.imageResId != 0) {
-                    painterResource(id = hotel.imageResId)
-                } else {
-                    Log.w("HomeScreen", "Using fallback image for hotel ${hotel.name} with invalid imageResId")
-                    painterResource(id = android.R.drawable.ic_menu_report_image)
-                },
-                contentDescription = hotel.name,
+                painter = runCatching {
+                    if (hotel.imageResId != 0) painterResource(id = hotel.imageResId)
+                    else painterResource(id = android.R.drawable.ic_menu_report_image)
+                }.getOrNull() ?: painterResource(id = android.R.drawable.ic_menu_report_image),
+                contentDescription = hotel.name.takeIf { it.isNotBlank() } ?: "Hotel Image", // Safe content description
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -192,6 +196,17 @@ fun HotelCarouselItem(hotel: Hotel, onBookClick: () -> Unit) {
             ) {
                 Text(text = "Book Now", color = Color.White)
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "See More",
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable(onClick = onSeeMoreClick),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp
+            )
         }
     }
 }

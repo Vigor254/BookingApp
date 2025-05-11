@@ -13,8 +13,7 @@ import androidx.navigation.NavHostController
 import com.vigor.hotelapp.viewmodel.HotelViewModel
 
 @Composable
-fun BookingScreen(navController: NavHostController, viewModel: HotelViewModel = hiltViewModel()) {
-    val hotelId = navController.previousBackStackEntry?.arguments?.getInt("hotelId") ?: 0
+fun BookingScreen(navController: NavHostController, hotelId: Int, viewModel: HotelViewModel = hiltViewModel()) {
     var hours by remember { mutableStateOf(1) }
 
     val hotel = viewModel.hotels.value.find { it.id == hotelId }
@@ -53,7 +52,6 @@ fun BookingScreen(navController: NavHostController, viewModel: HotelViewModel = 
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Home Button at Bottom
         Row(
             modifier = Modifier
                 .fillMaxWidth()
